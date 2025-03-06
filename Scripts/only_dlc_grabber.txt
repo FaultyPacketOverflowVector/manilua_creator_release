@@ -1,0 +1,53 @@
+(async function () {
+    // Wait for the page to load completely
+
+    // Get the page's HTML content
+    const htmlData = document.documentElement.outerHTML;
+
+    // Extract the game name from the <h1 itemprop="name"> tag
+    const gameNameRegex = /<h1[^>]*itemprop=["']name["'][^>]*>([^<]+)<\/h1>/;
+    const gameNameMatch = htmlData.match(gameNameRegex);
+    const gameName = gameNameMatch ? gameNameMatch[1].trim().replace(/[<>:"/\\|?*]+/g, '_') : "unknown_game";
+
+    // Locate the "Downloadable Content" section
+    const dlcSectionRegex = /<h2[^>]*>\s*Downloadable Content\s*<\/h2>([\s\S]+?)<\/table>/i;
+    const dlcSectionMatch = htmlData.match(dlcSectionRegex);
+
+    if (!dlcSectionMatch) {
+        console.log("No DLC section found on this page.");
+        return;
+    }
+
+    // Extract DLC IDs and names
+    const dlcTableHtml = dlcSectionMatch[1];
+    const dlcRegex = /<a\s+href="\/app\/(\d+)\/">\d+<\/a>\s*<\/td>\s*<td[^>]*>([^<]+)<\/td>/gi;
+
+    const dlcEntries = [];
+    let match;
+    while ((match = dlcRegex.exec(dlcTableHtml)) !== null) {
+        const dlcId = match[1].trim();
+        const dlcName = match[2].trim();
+        dlcEntries.push(`addappid(${dlcId}) -- ${dlcName}`);
+    }
+
+    // Check if DLCs were found
+    if (dlcEntries.length === 0) {
+        console.log("DLC section exists, but no DLC entries were found.");
+        return;
+    }
+
+    // Format the output
+    const output = [`-- All DLCs for ${gameName}`, ...dlcEntries].join('\n');
+
+    // Display the extracted DLCs
+    console.log(output);
+
+    // Create a downloadable file
+    const blob = new Blob([output], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${gameName}_DLCs.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+})();

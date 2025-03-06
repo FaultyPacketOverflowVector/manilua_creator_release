@@ -1,0 +1,33 @@
+(async function() {
+    const htmlData = document.documentElement.outerHTML;
+
+    const depotRegex = /<a href="\/depot\/(\d+)\/"/g;
+    const depotIds = new Set();
+    let match;
+    while ((match = depotRegex.exec(htmlData)) !== null) {
+        depotIds.add(match[1]);
+    }
+
+    const dlcRegex = /<td><a href="\/app\/(\d+)\/"/g;
+    const dlcIds = new Set();
+    while ((match = dlcRegex.exec(htmlData)) !== null) {
+        dlcIds.add(match[1]);
+    }
+
+    if (depotIds.size === 0 && dlcIds.size === 0) {
+        console.log("No Depot or DLC IDs found.");
+        return;
+    }
+
+    const allIds = Array.from(new Set([...depotIds, ...dlcIds]));
+
+    console.log(`Depot and DLC IDs:\n\n${allIds.join('\n')}`);
+
+    const blob = new Blob([allIds.join('\n')], { type: 'text/plain' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `grab_manifest.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+})();
